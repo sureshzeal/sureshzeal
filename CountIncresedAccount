@@ -1,0 +1,28 @@
+//Create a field on User Object "Count",
+// On Account update Increment 1 in update count field and on delete of account decrement count 1
+trigger AccountIncrementCount on Account (After insert,After update,After delete,After undelete) {
+    Set<Id> setId = new Set<Id>();
+    for(Account acc : trigger.new){
+        if(acc.Id != null){
+            setId.add(acc.Id);
+        }
+    }
+    
+    List<Account> accLst = [select id,Name,BillingCountry From Account where Id in: setId and BillingCountry = 'India'];
+    Map<Id,Integer> mapacc = new Map<Id,Integer>();
+    for(Account acc: accLst){
+        if(mapacc.containsKey(acc.Id)){
+            Integer countacc = mapacc.get(acc.Id)+1;
+            mapacc.put(acc.Id, countacc);
+        }else{
+            mapacc.put(acc.Id, 1);
+        }
+    }
+    List<User> UserLst = new List<User>();
+    for(Id accId :setId){
+        UserLst.add(new User(Id = accId,Count__c = mapacc.get(accId)));
+    }
+    if(UserLst.size() > 0){
+        Update UserLst;
+    }
+}
